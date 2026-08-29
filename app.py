@@ -66,18 +66,22 @@ try:
         if pd.isna(name) or str(name).strip() == "" or str(name).lower() == "nan":
             continue
             
-        # Clean phone number for tel link (remove spaces or notes like 'Cancelled')
+        # Clean phone number for tel link
         clean_phone = "".join(filter(str.isdigit, str(phone)))
         
-        # Create Google Maps URL
-        map_query = urllib.parse.quote(f"{address}, DD Block, New Town, Kolkata 700156")
-        map_url = f"https://www.google.com/maps/search/?api=1&query={map_query}"
+        # Format full address for Google Maps
+        full_address_str = f"{address}, DD Block, New Town, Kolkata 700156"
+        encoded_address = urllib.parse.quote(full_address_str)
         
-        # Render clickable buttons/links
+        # URLs for map search and root directions
+        map_url = f"https://www.google.com/maps/search/?api=1&query={encoded_address}"
+        directions_url = f"https://www.google.com/maps/dir/?api=1&destination={encoded_address}"
+        
+        # Render record card with actions
         st.markdown(f"👤 **{name}**")
         
         if address and str(address).lower() != "nan":
-            st.markdown(f"📍 [{address}]({map_url})")
+            st.markdown(f"📍 [{address}]({map_url}) | 🚗 [Get Directions]({directions_url})")
             
         if clean_phone:
             st.markdown(f"📞 [{phone}](tel:{clean_phone})")
