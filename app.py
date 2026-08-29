@@ -66,18 +66,20 @@ try:
         if pd.isna(name) or str(name).strip() == "" or str(name).lower() == "nan":
             continue
             
-        # Clean phone number for tel link
         clean_phone = "".join(filter(str.isdigit, str(phone)))
         
-        # Format full address for Google Maps
-        full_address_str = f"{address}, DD Block, New Town, Kolkata 700156"
-        encoded_address = urllib.parse.quote(full_address_str)
+        # Make sure the address string explicitly embeds DD Block and New Town for precise mapping
+        addr_text = str(address).strip()
+        if not any(keyword in addr_text.lower() for keyword in ["dd block", "new town", "kolkata"]):
+            full_map_query = f"DD Block, {addr_text}, New Town, Kolkata, West Bengal 700156"
+        else:
+            full_map_query = f"{addr_text}, Kolkata 700156"
+            
+        encoded_address = urllib.parse.quote(full_map_query)
         
-        # URLs for map search and root directions
         map_url = f"https://www.google.com/maps/search/?api=1&query={encoded_address}"
         directions_url = f"https://www.google.com/maps/dir/?api=1&destination={encoded_address}"
         
-        # Render record card with actions
         st.markdown(f"👤 **{name}**")
         
         if address and str(address).lower() != "nan":
