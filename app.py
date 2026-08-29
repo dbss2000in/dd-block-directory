@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import urllib.parse
 
 st.set_page_config(page_title="DD Block Directory", page_icon="📍", layout="centered")
 
@@ -9,9 +10,8 @@ st.write("Kolkata - 700156")
 @st.cache_data
 def load_data():
     excel_file = "DD_Block_New_Town_Kolkata_Directory.xlsx"
-    # Read excel file and find the correct sheet
     xls = pd.ExcelFile(excel_file)
-    sheet_to_use = xls.sheet_names[0] # defaults to first sheet
+    sheet_to_use = xls.sheet_names[0]
     for sheet in xls.sheet_names:
         if "Directory" in sheet:
             sheet_to_use = sheet
@@ -23,7 +23,6 @@ def load_data():
 try:
     raw_df = load_data()
     
-    # Locate the header row dynamically (looking for 'Name')
     header_row_idx = 0
     for idx, row in raw_df.iterrows():
         row_str = str(row.values)
@@ -31,7 +30,6 @@ try:
             header_row_idx = idx
             break
             
-    # Re-read with correct header row
     excel_file = "DD_Block_New_Town_Kolkata_Directory.xlsx"
     xls = pd.ExcelFile(excel_file)
     sheet_to_use = xls.sheet_names[0]
@@ -41,17 +39,14 @@ try:
             break
             
     df = pd.read_excel(excel_file, sheet_name=sheet_to_use, skiprows=header_row_idx)
-    df = df.dropna(subset=[df.columns[0]]) # drop empty rows
+    df = df.dropna(subset=[df.columns[0]])
     
-    # Clean column names
     df.columns = [str(c).strip() for c in df.columns]
     
-    # Identify key columns
     name_col = next((col for col in df.columns if 'name' in col.lower()), df.columns[0])
     address_col = next((col for col in df.columns if 'address' in col.lower() or 'street' in col.lower()), df.columns[1] if len(df.columns) > 1 else df.columns[0])
     phone_col = next((col for col in df.columns if 'phone' in col.lower() or 'number' in col.lower()), df.columns[-1])
 
-    # Search box
     search_query = st.text_input("🔍 Search by Name, Address, or Phone", "")
     
     if search_query:
@@ -63,7 +58,6 @@ try:
     st.write(f"Showing **{len(filtered_df)}** entries")
     st.divider()
 
-    # Display records
     for index, row in filtered_df.iterrows():
         name = row.get(name_col, "N/A")
         address = row.get(address_col, "N/A")
@@ -72,11 +66,24 @@ try:
         if pd.isna(name) or str(name).strip() == "" or str(name).lower() == "nan":
             continue
             
-        st.markdown(f"""
-        👤 **{name}**  
-        📍 {address}  
-        📞 `{phone}`
-        """)
+        # Clean phone number for tel link (remove spaces or notes like 'Cancelled')
+        clean_phone = "".join(filter(str.isdigit, str(phone)))
+        
+        # Create Google Maps URL
+        map_query = urllib.parse.quote(f"{address}, DD Block, New Town, Kolkata 700156")
+        map_url = f"https://www.google.com/maps/search/?api=1&query={map_query}"
+        
+        # Render clickable buttons/links
+        st.markdown(f"👤 **{name}**")
+        
+        if address and str(address).lower() != "nan":
+            st.markdown(f"📍 [{address}]({map_url})")
+            
+        if clean_phone:
+            st.markdown(f"📞 [{phone}](tel:{clean_phone})")
+        else:
+            st.markdown(f"📞 {phone}")
+            
         st.markdown("---")
 
 except Exception as e:
